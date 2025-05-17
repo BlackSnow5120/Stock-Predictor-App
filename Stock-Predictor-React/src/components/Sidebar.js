@@ -18,6 +18,13 @@ function Sidebar({ activeTab, setActiveTab }) {
           <span>Dashboard</span>
         </div>
         <div 
+          className={`nav-item ${activeTab === 'news' ? 'active' : ''}`}
+          onClick={() => setActiveTab('news')}
+        >
+          <i className="nav-icon">📰</i>
+          <span>News</span>
+        </div>
+        <div 
           className={`nav-item ${activeTab === 'predict' ? 'active' : ''}`}
           onClick={() => setActiveTab('predict')}
         >

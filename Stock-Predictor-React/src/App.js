@@ -9,6 +9,8 @@ import Header from './components/Header';
 import Dashboard from './components/Dashboard';
 import PredictionView from './components/PredictionView';
 import TrainingView from './components/TrainingView';
+import News from './components/news';
+
 
 // Services
 import { fetchMetricsData } from './services/api';
@@ -61,6 +63,12 @@ function App() {
               metricsData={metricsData} 
               original={original} 
               predicted={predicted}
+              setActiveTab={setActiveTab} 
+            />
+          )}
+
+          {activeTab === 'news' && (
+            <News
               setActiveTab={setActiveTab} 
             />
           )}
