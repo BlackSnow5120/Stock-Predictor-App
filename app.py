@@ -8,8 +8,8 @@ import pandas as pd
 import yfinance as yf
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from keras.models import Sequential, load_model
-from keras.layers import LSTM, Dense
+from tensorflow.keras.models import Sequential, load_model
+from tensorflow.keras.layers import LSTM, Dense
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 import requests
