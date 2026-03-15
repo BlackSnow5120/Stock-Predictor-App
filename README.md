@@ -10,6 +10,12 @@ A stock price prediction application with machine learning models (LSTM, Chronos
 - **News Sentiment**: VADER-based sentiment analysis with 30-day news window
 - **Technical Indicators**: RSI, MACD, Moving Averages built-in
 
+## ScreenShots
+<img width="1916" height="882" alt="Screenshot 2026-03-15 182131" src="https://github.com/user-attachments/assets/ef1faae1-36f6-42fa-972f-39ea8232db31" />
+<img width="1908" height="839" alt="Screenshot 2026-03-15 182208" src="https://github.com/user-attachments/assets/7db3517a-3785-4e81-b7e1-fb916d96126f" />
+<img width="816" height="856" alt="Screenshot 2026-03-15 193643" src="https://github.com/user-attachments/assets/ff414a31-3078-4f17-9616-b2da679d7871" />
+<img width="1508" height="849" alt="Screenshot 2026-03-15 193707" src="https://github.com/user-attachments/assets/b245ace4-8a3c-4dc1-993b-8f0c379a26b7" />
+
 ## Quick Start
 
 ### Installation
@@ -91,8 +97,8 @@ StcokPredApp/
 | Model | Training | Description |
 |-------|----------|-------------|
 | `lstm` | Required | Bidirectional LSTM with attention |
-| `chronos` | Pre-trained | HuggingFace Chronos model |
-| `chronos-t5` | Pre-trained | Amazon Chronos-T5 model |
+| `chronos2` | Pre-trained | HuggingFace Chronos model |
+| `chronos-bolt` | Pre-trained | Amazon Chronos-T5 model |
 
 ## API Endpoints
 
@@ -195,7 +201,3 @@ pip install tensorflow[and-cuda]
 ```bash
 pip install transformers torch
 ```
-
-## License
-
-Free to use for educational and personal purposes.
