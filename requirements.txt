@@ -1,10 +1,34 @@
-Flask==3.1.0
-flask-cors==5.0.1
-numpy==2.0.2
-pandas==2.2.3
-yfinance==0.2.55
-requests==2.32.3
-beautifulsoup4==4.13.3
-nltk==3.9.1
-scikit-learn==1.5.2
-tensorflow==2.18.0
+# Core Framework
+fastapi
+uvicorn[standard]
+pydantic
+
+# Flask (Legacy Support)
+Flask
+flask-cors
+werkzeug
+
+# Data Processing
+pandas
+numpy
+python-dateutil
+pytz
+
+# Machine Learning & Deep Learning
+scikit-learn
+joblib
+tensorflow
+torch
+
+# NLP & Specialized Models
+nltk
+transformers
+
+# Visualization & UI
+streamlit
+plotly
+matplotlib
+
+# Utilities
+requests
+tqdm
