@@ -228,6 +228,87 @@ def get_data(request: DataRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/api/market/trending", tags=["Market Data"])
+def get_trending_stocks():
+    """Fetch Day Gainers from Yahoo Finance screener."""
+    import requests
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+    url = "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=true&scrIds=day_gainers&count=6"
+    try:
+        r = requests.get(url, headers=headers, timeout=5)
+        if r.ok:
+            data = r.json()
+            quotes = data.get("finance", {}).get("result", [])[0].get("quotes", [])
+            movers = []
+            for q in quotes:
+                movers.append({
+                    "symbol": q.get("symbol"),
+                    "name": q.get("shortName", q.get("symbol")),
+                    "change": q.get("regularMarketChangePercent", {}).get("fmt", "0.00%"),
+                    "price": q.get("regularMarketPrice", {}).get("fmt", "0.00")
+                })
+            return {"status": "success", "movers": movers}
+    except Exception as e:
+        print(f"Error fetching trending stocks: {e}")
+    return {"status": "error", "movers": []}
+
+@app.get("/api/social/reddit", tags=["Market Data"])
+def get_reddit_sentiment(ticker: str = Query(..., description="Stock symbol")):
+    """Fetch recent social sentiment from Reddit r/stocks and r/wallstreetbets."""
+    import requests
+    headers = {'User-Agent': 'Windows:StockPredictorApp:v1.0 (by /u/Developer)'}
+    subreddits = ["wallstreetbets", "stocks", "investing"]
+    posts = []
+    
+    for sub in subreddits:
+        url = f"https://www.reddit.com/r/{sub}/search.json?q={ticker}&restrict_sr=1&sort=new&limit=2"
+        try:
+            r = requests.get(url, headers=headers, timeout=5)
+            if r.ok:
+                data = r.json().get("data", {}).get("children", [])
+                for item in data:
+                    post = item["data"]
+                    posts.append({
+                        "id": post.get("id"),
+                        "title": post.get("title"),
+                        "subreddit": post.get("subreddit_name_prefixed"),
+                        "score": post.get("score", 0),
+                        "url": f"https://www.reddit.com{post.get('permalink')}"
+                    })
+        except Exception as e:
+            print(f"Reddit error for {sub}: {e}")
+            
+    # Deduplicate and sort by most upvotes
+    unique_posts = {p['id']: p for p in posts}.values()
+    sorted_posts = sorted(unique_posts, key=lambda x: x['score'], reverse=True)
+    return {"status": "success", "reddit": sorted_posts[:5]}
+
+@app.get("/api/proxy/article", tags=["Intel"])
+def process_article(url: str):
+    """Fetches pure text and images from a news URL using NLP, bypassing strict iframing blocks."""
+    from feedparser import util
+    try:
+        import newspaper
+        article = newspaper.Article(url)
+        article.download()
+        article.parse()
+        
+        # Format text to have HTML paragraphs
+        formatted_text = ""
+        if article.text:
+            formatted_text = "".join([f"<p style='margin-bottom:16px; line-height:1.6;'>{p}</p>" for p in article.text.split('\n\n') if p.strip()])
+            
+        return {
+            "status": "success",
+            "title": article.title,
+            "text": formatted_text,
+            "top_image": article.top_image,
+            "authors": article.authors
+        }
+    except Exception as e:
+        print(f"Extraction failed for {url}: {e}")
+        return {"status": "error", "message": str(e)}
+
 @app.get("/api/youtube/channels", tags=["Media"])
 def get_youtube_channels():
     """Fetch latest video thumbnails from multiple geopolitical news channels."""

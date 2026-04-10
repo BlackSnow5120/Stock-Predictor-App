@@ -49,10 +49,17 @@ def _parse_feed(feed_info: dict, limit: int = 4) -> list:
             title_el = item.find("title")
             link_el = item.find("link")
             pub_el = item.find("pubDate")
+            desc_el = item.find("description")
 
             title = title_el.text.strip() if title_el is not None and title_el.text else None
             link = link_el.text.strip() if link_el is not None and link_el.text else "#"
             pub = pub_el.text.strip() if pub_el is not None and pub_el.text else "Recently"
+            
+            # Clean up HTML tags from description if present
+            desc = desc_el.text.strip() if desc_el is not None and desc_el.text else ""
+            import re
+            desc = re.sub(r'<[^>]+>', '', desc)
+            if len(desc) > 150: desc = desc[:147] + "..."
 
             # Shorten date string
             try:
@@ -72,6 +79,7 @@ def _parse_feed(feed_info: dict, limit: int = 4) -> list:
 
                 results.append({
                     "title": f"[{feed_info['name']}] {title}",
+                    "description": desc,
                     "type": category,
                     "time": pub,
                     "url": link
