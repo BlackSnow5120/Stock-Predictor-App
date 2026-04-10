@@ -4,13 +4,15 @@ FastAPI Application - Stock Prediction API with Streamlit support.
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from typing import Optional, List
 import sys
 import os
 
-# Add app directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'app'))
+# Add parent directory to path so 'app' package can be resolved
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.services import StockService, NewsService, ModelService
 
@@ -81,16 +83,30 @@ news_service = NewsService()
 model_service = ModelService()
 
 
-@app.get("/", tags=["Root"])
-def home():
+# Mount static files correctly
+static_dir = os.path.join(os.path.dirname(__file__), 'static')
+os.makedirs(static_dir, exist_ok=True)
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+@app.get("/", tags=["Dashboard"])
+def serve_dashboard():
+    """Serve the real-time stock dashboard."""
+    index_path = os.path.join(static_dir, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"message": "Static frontend not built yet. Create app/static/index.html."}
+
+@app.get("/api/info", tags=["System"])
+def api_info():
     """API information and available endpoints."""
     return {
-        "name": "Stock Prediction API",
+        "name": "Stock Prediction Dashboard API",
         "version": "2.0.0",
-        "description": "FastAPI for stock price prediction with multiple ML models",
+        "description": "FastAPI for stock price prediction with unified dashboard",
         "architecture": "3-Layer (API → Services → Repositories)",
         "endpoints": {
-            "GET /": "API information",
+            "GET /": "Dashboard Web UI",
+            "GET /api/info": "API information",
             "GET /models": "List available models",
             "POST /train": "Train a model",
             "POST /predict": "Make predictions",
@@ -98,8 +114,7 @@ def home():
             "GET /metrics": "Get model metrics",
             "POST /data": "Fetch historical stock data",
             "GET /health": "Health check",
-            "GET /docs": "Interactive API documentation (Swagger)",
-            "GET /redoc": "API documentation (ReDoc)"
+            "GET /docs": "Interactive API documentation"
         }
     }
 
@@ -212,6 +227,142 @@ def get_data(request: DataRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@app.get("/api/youtube/channels", tags=["Media"])
+def get_youtube_channels():
+    """Fetch latest video thumbnails from multiple geopolitical news channels."""
+    import requests, re
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    CHANNELS = [
+        {"name": "Firstpost",      "handle": "Firstpost"},
+        {"name": "WION",           "handle": "WION"},
+        {"name": "Al Jazeera",     "handle": "AlJazeeraEnglish"},
+        {"name": "DW News",        "handle": "dwnews"},
+        {"name": "France 24",      "handle": "France24English"},
+        {"name": "Times Now",      "handle": "TimesNow"},
+    ]
+
+    def fetch_channel(ch):
+        scraped_videos = []
+        try:
+            handle = f"@{ch['handle']}"
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+
+            # Fetch live 
+            r_live = requests.get(f"https://www.youtube.com/{handle}/live", headers=headers, timeout=8)
+            if r_live.ok:
+                html = r_live.text
+                vid_match = re.search(r'"videoId":"([a-zA-Z0-9_-]{11})"', html)
+                live_match = bool(re.search(r'"isLive"\s*:\s*true', html))
+                if vid_match and live_match:
+                    video_id = vid_match.group(1)
+                    title_match = re.search(r'"title"\s*:\s*\{"runs"\s*:\s*\[\{"text"\s*:\s*"([^"]+)"', html)
+                    scraped_videos.append({
+                        "name": ch["name"],
+                        "videoId": video_id,
+                        "isLive": True,
+                        "title": title_match.group(1) if title_match else ch["name"] + " Live",
+                        "url": f"https://www.youtube.com/watch?v={video_id}",
+                        "thumbnail": f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
+                    })
+
+            # Fetch recent videos
+            r_vids = requests.get(f"https://www.youtube.com/{handle}/videos", headers=headers, timeout=8)
+            if r_vids.ok:
+                html = r_vids.text
+                # Find all video IDs
+                matches = re.finditer(r'"videoId":"([a-zA-Z0-9_-]{11})"', html)
+                seen = {v['videoId'] for v in scraped_videos}
+                added = 0
+                for match in matches:
+                    vid = match.group(1)
+                    if vid not in seen:
+                        seen.add(vid)
+                        scraped_videos.append({
+                            "name": ch["name"],
+                            "videoId": vid,
+                            "isLive": False,
+                            "title": ch["name"] + " Latest News", # Simplified title extraction for speed
+                            "url": f"https://www.youtube.com/watch?v={vid}",
+                            "thumbnail": f"https://img.youtube.com/vi/{vid}/hqdefault.jpg"
+                        })
+                        added += 1
+                        if added >= 2: # Keep max 2 non-live videos per channel
+                            break
+
+        except Exception as e:
+            print(f"Channel fetch error {ch['name']}: {e}")
+        return scraped_videos
+
+    results = []
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        futures = {ex.submit(fetch_channel, ch): ch for ch in CHANNELS}
+        for future in as_completed(futures):
+            res_list = future.result()
+            if res_list:
+                results.extend(res_list)
+
+    # Sort: live channels first
+    results.sort(key=lambda x: (0 if x["isLive"] else 1))
+    return {"status": "success", "channels": results}
+
+@app.get("/api/youtube/live", tags=["Media"])
+def get_youtube_live(channel: str = Query(..., description="YouTube channel handle without @, e.g., 'Firstpost'")):
+    """Scrape YouTube to find the current live or latest video for a channel without requiring an API key."""
+    import requests
+    import re
+    try:
+        channel_handle = channel if channel.startswith('@') else f"@{channel}"
+        url = f"https://www.youtube.com/{channel_handle}/live"
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+        
+        response = requests.get(url, headers=headers, timeout=10)
+        
+        if not response.ok:
+            return {"videoId": None, "isLive": False, "error": "Channel fetch failed"}
+            
+        html = response.text
+        
+        # Regex to find videoId
+        video_id = None
+        is_live = False
+        
+        details_idx = html.find('"videoDetails"')
+        if details_idx != -1:
+            block = html[details_idx:details_idx + 5000]
+            vid_match = re.search(r'"videoId":"([a-zA-Z0-9_-]{11})"', block)
+            live_match = re.search(r'"isLive"\s*:\s*true', block)
+            
+            if vid_match:
+                video_id = vid_match.group(1)
+            if live_match:
+                is_live = True
+                
+        # If no live video is found, fallback to their latest videos route
+        if not video_id:
+            url_latest = f"https://www.youtube.com/{channel_handle}/videos"
+            response_latest = requests.get(url_latest, headers=headers, timeout=10)
+            if response_latest.ok:
+                html_latest = response_latest.text
+                vid_match = re.search(r'"videoId":"([a-zA-Z0-9_-]{11})"', html_latest)
+                if vid_match:
+                    video_id = vid_match.group(1)
+                    
+        return {"videoId": video_id, "isLive": is_live, "channel": channel_handle}
+    except Exception as e:
+        return {"videoId": None, "isLive": False, "error": str(e)}
+
+@app.get("/api/news/global", tags=["Media"])
+def get_global_news():
+    """Scrape Bing News for Geopolitics via Playwright."""
+    try:
+        from app.repositories.browser_scraper import BrowserScraper
+        scraper = BrowserScraper()
+        news = scraper.scrape_global_news()
+        return {"status": "success", "news": news}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 @app.get("/health", tags=["Health"])
 def health():

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock & Geopolitics Monitor</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=SF+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Plotly CDN for Charts -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Skeleton Shell (visible before JS load) -->
+        <div class="skeleton-shell" id="skeleton-shell">
+            <div class="skeleton-header">
+                <div class="skeleton-header-left">
+                    <div class="skeleton-pill" style="width:140px"></div>
+                    <div class="skeleton-pill" style="width:80px"></div>
+                </div>
+                <div class="skeleton-header-right">
+                    <div class="skeleton-pill" style="width:100px"></div>
+                </div>
+            </div>
+            <div class="skeleton-main">
+                <div class="skeleton-map"></div>
+                <div class="skeleton-grid">
+                    <div class="skeleton-panel"></div>
+                    <div class="skeleton-panel"></div>
+                    <div class="skeleton-panel"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard (hidden pending load) -->
+        <div id="dashboard" class="dashboard-container" style="display: none;">
+            <header class="app-header">
+                <div class="header-left">
+                    <div class="logo">
+                        <span class="globe-icon">🌐</span>
+                        <h1>PULSE MONITOR</h1>
+                    </div>
+                    <nav class="main-nav">
+                        <button class="nav-btn active" data-tab="stock-radar">Stock Radar</button>
+                        <button class="nav-btn" data-tab="geopolitics">Geopolitics & Media</button>
+                    </nav>
+                </div>
+                <div class="header-right">
+                    <div class="search-bar">
+                        <input type="text" id="stock-search" placeholder="Enter Symbol (e.g. MSFT)" value="AAPL">
+                        <button id="search-btn">Analyze</button>
+                    </div>
+                </div>
+            </header>
+
+            <main class="app-main">
+                <!-- TAB: Stock Radar -->
+                <div id="stock-radar" class="tab-pane active">
+                    <!-- Main Chart Area (Mimicking World Monitor Globe area) -->
+                    <section class="hero-section">
+                        <div class="radar-header">
+                            <h2 id="current-symbol">AAPL Radar</h2>
+                            <div class="controls">
+                                <select id="model-select">
+                                    <option value="lstm">LSTM Prediction</option>
+                                    <option value="chronos">Chronos</option>
+                                    <option value="chronos-t5">Chronos T5</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="main-chart" class="chart-container"></div>
+                    </section>
+                    
+                    <!-- Analytics Grid -->
+                    <section class="analytics-grid">
+                        <!-- Panel: Summary -->
+                        <div class="panel">
+                            <div class="panel-header">Market Data</div>
+                            <div class="panel-content stat-grid" id="market-stats">
+                                <div class="stat-item loading-text">Loading...</div>
+                            </div>
+                        </div>
+
+                        <!-- Panel: Predictions -->
+                        <div class="panel">
+                            <div class="panel-header">AI Forecast</div>
+                            <div class="panel-content">
+                                <div class="action-row">
+                                    <button class="action-btn" id="train-btn">Train Model</button>
+                                    <button class="action-btn primary" id="predict-btn">Generate Forecast</button>
+                                </div>
+                                <div class="predictions-list" id="predictions-list">
+                                    <p class="empty-state">No forecast generated.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel: Sentiment -->
+                        <div class="panel">
+                            <div class="panel-header">FinNews Sentiment</div>
+                            <div class="panel-content sentiment-container">
+                                <div id="sentiment-score" class="sentiment-score">
+                                    <span class="score-value">-</span>
+                                </div>
+                                <div class="news-list compact" id="stock-news">
+                                    <p class="empty-state">Loading sentiment...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- TAB: Geopolitics & Media -->
+                <div id="geopolitics" class="tab-pane">
+                    <!-- Top: Channels Grid -->
+                    <section class="panel channels-section">
+                        <div class="panel-header">📡 Global News Channels — Latest Videos</div>
+                        <div class="channels-grid" id="channels-grid">
+                            <p class="loading-state" style="padding:20px;">Loading channels...</p>
+                        </div>
+                    </section>
+
+                    <!-- Bottom: News Feed -->
+                    <section class="intelligence-feed panel">
+                        <div class="panel-header">🌐 Global Intelligence Feed — Today's Dispatch</div>
+                        <div class="feed-container" id="geo-news-list">
+                            <p class="loading-state">Syncing satellites and scraping intelligence...</p>
+                        </div>
+                    </section>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

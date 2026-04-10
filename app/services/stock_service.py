@@ -44,6 +44,10 @@ class StockService:
             if 'Timestamp' in df.columns:
                 df['Timestamp'] = df['Timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
             
+            # Replace NaN values with None for JSON compliance
+            import numpy as np
+            df = df.replace({np.nan: None})
+            
             # Convert DataFrame to dict for JSON serialization
             result = df.tail(100).to_dict(orient='records')
             
